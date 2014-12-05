@@ -1,3 +1,6 @@
+%% read in chunked data from sequenced files
+%%dir_file_prefix: directory and file prefix combination string
+%%numfiles: number of files
 function [fv] = read_data(dir_file_prefix, numfiles)
     digit = length(int2str(numfiles));
 
