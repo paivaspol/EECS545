@@ -1,13 +1,12 @@
 %% A gradient descent algorithm for finding the optimal U and V.
-function [U, V] = pmf_gradient_descent(R, lambda_u, lambda_v, m, n, d)
+function [U, V] = pmf_gradient_descent(R, U, V, lambda_u, lambda_v, m, n, d)
 
   % constants for the function
   epsilon = 1e-4;
   alpha = 10;
-
-  % temporary variables
-  U_new = zeros([d,n]);
-  V_new = zeros([d,m]);
+  
+  U_new = U;
+  V_new = V;
   
   old_obj_fn = pmf_objective_function(R, U_new, V_new, lambda_u, lambda_v);
   
