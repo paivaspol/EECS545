@@ -1,6 +1,7 @@
 %% read in chunked data from sequenced files
 %%dir_file_prefix: directory and file prefix combination string
 %%numfiles: number of files
+%%e.x. read_data('netflix_toy_data/mv_data_chunks/mv_data_', 12)
 function [fv] = read_data(dir_file_prefix, numfiles)
     digit = length(int2str(numfiles));
 
