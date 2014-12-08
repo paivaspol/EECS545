@@ -7,7 +7,7 @@ alpha = 50; % learning rate
 lambda = 0.01; % regularization parameter
 momentum = 0.8; % momentum for adaptive gradient descent
 
-max_iterations = 5;
+max_iterations = 50;
 
 load moviedata
 mean_rating = mean(train_vec(:,3));
