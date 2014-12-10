@@ -1,15 +1,34 @@
-function constrained_pmf()
+function constrained_pmf(dataFileName, mapSparseData)
 
-load moviedata
-
-n = max([train_vec(:,1); probe_vec(:,2)]);  % user count
-m = max([train_vec(:,2); probe_vec(:,2)]);  % movie count
-d = 30;                                     % number of features
-K = 5;                                      % max rating value
+load(dataFileName)
 
 training_size = size(train_vec, 1);
 batch_size = 100000;
 batch_count = floor(training_size / batch_size);
+
+
+if mapSparseData
+  map_to_user_ids = unique([train_vec(:,1); probe_vec(:,1)]);
+  map_to_movie_ids = unique([train_vec(:,2); probe_vec(:,2)]);
+  fprintf('Mapping user data to have smaller dimensions...');
+  for i=1:numel(map_to_user_ids)
+    train_vec(train_vec(:, 1) == map_to_user_ids(i), 1) = i;
+    probe_vec(probe_vec(:, 1) == map_to_user_ids(i), 1) = i;
+  end
+  fprintf('Done.\n');
+  fprintf('Mapping movie data to have smaller dimensions...\n');
+  for j=1:numel(map_to_movie_ids)
+    train_vec(train_vec(:, 2) == map_to_movie_ids(j), 2) = j;
+    probe_vec(probe_vec(:, 2) == map_to_movie_ids(j), 2) = j;
+  end
+  fprintf('Done.\n');
+end
+
+n = numel(map_to_user_ids);   % user count
+m = numel(map_to_movie_ids);  % movie count
+d = 30;                       % number of features
+K = 5;                        % max rating value
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % TUNE-ABLE PARAMETERS
