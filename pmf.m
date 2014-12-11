@@ -1,11 +1,13 @@
-function constrained_pmf(dataFileName, mapSparseData)
+function pmf(dataFileName, mapSparseData)
 
-load(dataFileName)
+load moviedata_s1_new
 
 training_size = size(train_vec, 1);
 batch_size = 100000;
 batch_count = floor(training_size / batch_size);
 
+n = max([train_vec(:,1); probe_vec(:,1)]);
+m = max([train_vec(:,1); probe_vec(:,1)]);
 
 if mapSparseData
   map_to_user_ids = unique([train_vec(:,1); probe_vec(:,1)]);
@@ -21,14 +23,13 @@ if mapSparseData
     train_vec(train_vec(:, 2) == map_to_movie_ids(j), 2) = j;
     probe_vec(probe_vec(:, 2) == map_to_movie_ids(j), 2) = j;
   end
+  n = numel(map_to_user_ids);   % user count
+  m = numel(map_to_movie_ids);  % movie count
   fprintf('Done.\n');
 end
 
-n = numel(map_to_user_ids);   % user count
-m = numel(map_to_movie_ids);  % movie count
 d = 30;                       % number of features
 K = 5;                        % max rating value
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % TUNE-ABLE PARAMETERS
@@ -45,6 +46,7 @@ V = zeros(d, m);    % movie factor matrix
 
 for iterations = 1:number_of_iterations
   for batch=1:batch_count
+    disp(U(1,1))
     fprintf('Iteration %d, Batch %d\n', iterations, batch);
     start_index = ((batch - 1) * batch_size) + 1;
     end_index = batch * batch_size;
@@ -52,8 +54,8 @@ for iterations = 1:number_of_iterations
     movie_indices = train_vec(start_index:end_index, 2);
     ratings = train_vec(start_index:end_index, 3);
     
-    ratings = mapRatings(ratings, K);
-    ratings_predicted = calculatePredictedRatings(U(:,user_indices), V(:, movie_indices));
+    ratings_predicted = calculatePredictedRatings(U(:,user_indices), V(:,movie_indices));
+    disp(ratings_predicted)
     
     % Calculate gradients
     shared_coefficient = -(ratings - ratings_predicted);
@@ -75,22 +77,14 @@ for iterations = 1:number_of_iterations
   end
     
   % Calculate training error
-  ratings = unmapRatings(ratings, K);
-  ratings_predicted = unmapRatings(ratings_predicted, K);
   training_RMSE = calculateRMSE(ratings, ratings_predicted);
   
   % Calculate test error
-  test_size = size(probe_vec, 1);
   user_indices = probe_vec(:, 1);
   movie_indices = probe_vec(:, 2);
   ratings = probe_vec(:, 3);
   
-  ratings = mapRatings(ratings, K);
-  [U, ~] = calculateUserCoefficientMatrix(d, n, Y, W, user_indices, movie_indices);
-  ratings_predicted = calculatePredictedRatings(U, V(:, movie_indices));
-    
-  ratings = unmapRatings(ratings, K);
-  ratings_predicted = unmapRatings(ratings_predicted, K);
+  ratings_predicted = calculatePredictedRatings(U(:,user_indices), V(:, movie_indices));
   test_RMSE = calculateRMSE(ratings, ratings_predicted);
   
   fprintf('Training RMSE: %2.3f\n', training_RMSE);
@@ -106,15 +100,17 @@ function result = mapRatings(ratings, K)
 end
 
 function result = unmapRatings(ratings, K)
-  result = zeros(size(ratings));
-  for i=1:size(ratings)
-    result(i) = (ratings(i)* (K - 1)) + 1;
-    if result(i) > 5
-      result(i) = 5;
-    elseif result(i) < 1
-      result(i) = 1;
-    end
-  end
+  ratings(ratings > 5) = 5;
+  ratings(ratings < 1) = 1;
+  result = ratings;
+%   for i=1:size(ratings)
+%     result(i) = (ratings(i)* (K - 1)) + 1;
+%     if result(i) > 5
+%       result(i) = 5;
+%     elseif result(i) < 1
+%       result(i) = 1;
+%     end
+%   end
 end
 
 function ratings_predicted = calculatePredictedRatings(U, V)

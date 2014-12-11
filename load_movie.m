@@ -1,5 +1,5 @@
 % movieIDs, userIDs, rating_matrix are what you need
-clear;clc;
+fprintf('loading data...\n');
 load moviedata_s1.mat
 movieIDs = sort(unique(train_vec(:, 1)));
 userIDs = sort(unique(train_vec(:, 2)));
@@ -21,4 +21,23 @@ end
 
 st = size(train_vec, 1);
 st = st - mod(st, 100000);
-new_train_vec = train_vec(1:st, :);
+train_vec = train_vec(1:st, :);
+
+  map_to_user_ids = unique([train_vec(:,1); probe_vec(:,1)]);
+  map_to_movie_ids = unique([train_vec(:,2); probe_vec(:,2)]);
+  fprintf('Mapping user data to have smaller dimensions...');
+  for i=1:numel(map_to_user_ids)
+    train_vec(train_vec(:, 1) == map_to_user_ids(i), 1) = i;
+    probe_vec(probe_vec(:, 1) == map_to_user_ids(i), 1) = i;
+  end
+  fprintf('Done.\n');
+  fprintf('Mapping movie data to have smaller dimensions...\n');
+  for j=1:numel(map_to_movie_ids)
+    train_vec(train_vec(:, 2) == map_to_movie_ids(j), 2) = j;
+    probe_vec(probe_vec(:, 2) == map_to_movie_ids(j), 2) = j;
+  end
+  fprintf('Done.\n');
+
+save moviedata_s1_new.mat train_vec probe_vec
+
+fprintf('done loading data...\n');
