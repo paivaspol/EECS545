@@ -1,32 +1,14 @@
-function constrained_pmf(dataFileName, mapSparseData)
+function constrained_pmf(dataFileName)
 
 load(dataFileName)
 
 training_size = size(train_vec, 1);
 batch_size = 100000;
-batch_count = floor(training_size / batch_size);
+batch_count = batches;
 
-
-if mapSparseData
-  map_to_user_ids = unique([train_vec(:,1); probe_vec(:,1)]);
-  map_to_movie_ids = unique([train_vec(:,2); probe_vec(:,2)]);
-  fprintf('Mapping user data to have smaller dimensions...');
-  for i=1:numel(map_to_user_ids)
-    train_vec(train_vec(:, 1) == map_to_user_ids(i), 1) = i;
-    probe_vec(probe_vec(:, 1) == map_to_user_ids(i), 1) = i;
-  end
-  fprintf('Done.\n');
-  fprintf('Mapping movie data to have smaller dimensions...\n');
-  for j=1:numel(map_to_movie_ids)
-    train_vec(train_vec(:, 2) == map_to_movie_ids(j), 2) = j;
-    probe_vec(probe_vec(:, 2) == map_to_movie_ids(j), 2) = j;
-  end
-  fprintf('Done.\n');
-end
-
-n = numel(map_to_user_ids);   % user count
-m = numel(map_to_movie_ids);  % movie count
-d = 30;                       % number of features
+n = user_count;   % user count
+m = movie_count;  % movie count
+d = 10;                       % number of features
 K = 5;                        % max rating value
 
 
@@ -34,9 +16,9 @@ K = 5;                        % max rating value
 % TUNE-ABLE PARAMETERS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-alpha = 0.5;                % gradient descent step size
+alpha = 0.02;                % gradient descent step size
 lambda = 0.002;             % regularization parameter
-number_of_iterations = 15;  % maximum number of iterations
+number_of_iterations = 50;  % maximum number of iterations
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -85,7 +67,7 @@ for iterations = 1:number_of_iterations
   % Calculate training error
   ratings = unmapRatings(ratings, K);
   ratings_predicted = unmapRatings(ratings_predicted, K);
-  training_RMSE = calculateRMSE(ratings, ratings_predicted);
+  training_RMSE(iterations) = calculateRMSE(ratings, ratings_predicted);
   
   % Calculate test error
   test_size = size(probe_vec, 1);
@@ -99,11 +81,13 @@ for iterations = 1:number_of_iterations
     
   ratings = unmapRatings(ratings, K);
   ratings_predicted = unmapRatings(ratings_predicted, K);
-  test_RMSE = calculateRMSE(ratings, ratings_predicted);
+  test_RMSE(iterations) = calculateRMSE(ratings, ratings_predicted);
   
-  fprintf('Training RMSE: %2.3f\n', training_RMSE);
-  fprintf('Test RMSE: %2.3f\n', test_RMSE);
+  fprintf('Training RMSE: %2.3f\n', training_RMSE(iterations));
+  fprintf('Test RMSE: %2.3f\n', test_RMSE(iterations));
 end
+
+save constrained_pmf_s3_10 training_RMSE test_RMSE
 end
 
 function result = mapRatings(ratings, K)

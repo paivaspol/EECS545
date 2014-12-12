@@ -1,31 +1,11 @@
-function constrained_pmf(dataFileName, mapSparseData)
+function logistic_pmf(dataFileName, mapSparseData)
 
-load(dataFileName)
+load moviedata_s1_new
 
-training_size = size(train_vec, 1);
+n = user_count;
+m = movie_count;
+batch_count = batches;
 batch_size = 100000;
-batch_count = floor(training_size / batch_size);
-
-
-if mapSparseData
-  map_to_user_ids = unique([train_vec(:,1); probe_vec(:,1)]);
-  map_to_movie_ids = unique([train_vec(:,2); probe_vec(:,2)]);
-  fprintf('Mapping user data to have smaller dimensions...');
-  for i=1:numel(map_to_user_ids)
-    train_vec(train_vec(:, 1) == map_to_user_ids(i), 1) = i;
-    probe_vec(probe_vec(:, 1) == map_to_user_ids(i), 1) = i;
-  end
-  fprintf('Done.\n');
-  fprintf('Mapping movie data to have smaller dimensions...\n');
-  for j=1:numel(map_to_movie_ids)
-    train_vec(train_vec(:, 2) == map_to_movie_ids(j), 2) = j;
-    probe_vec(probe_vec(:, 2) == map_to_movie_ids(j), 2) = j;
-  end
-  fprintf('Done.\n');
-end
-
-n = numel(map_to_user_ids);   % user count
-m = numel(map_to_movie_ids);  % movie count
 d = 30;                       % number of features
 K = 5;                        % max rating value
 
@@ -34,14 +14,14 @@ K = 5;                        % max rating value
 % TUNE-ABLE PARAMETERS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-alpha = 0.5;                % gradient descent step size
+alpha = 0.02;                % gradient descent step size
 lambda = 0.002;             % regularization parameter
-number_of_iterations = 15;  % maximum number of iterations
+number_of_iterations = 50;  % maximum number of iterations
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-U = zeros(d, n);    % user factor matrix
-V = zeros(d, m);    % movie factor matrix
+U = 0.1*randn(d, user_count);
+V = 0.1*randn(d, movie_count);
 
 for iterations = 1:number_of_iterations
   for batch=1:batch_count
@@ -51,7 +31,7 @@ for iterations = 1:number_of_iterations
     user_indices = train_vec(start_index:end_index, 1);
     movie_indices = train_vec(start_index:end_index, 2);
     ratings = train_vec(start_index:end_index, 3);
-    
+
     ratings = mapRatings(ratings, K);
     ratings_predicted = calculatePredictedRatings(U(:,user_indices), V(:, movie_indices));
     
@@ -77,7 +57,7 @@ for iterations = 1:number_of_iterations
   % Calculate training error
   ratings = unmapRatings(ratings, K);
   ratings_predicted = unmapRatings(ratings_predicted, K);
-  training_RMSE = calculateRMSE(ratings, ratings_predicted);
+  training_RMSE(iterations) = calculateRMSE(ratings, ratings_predicted);
   
   % Calculate test error
   test_size = size(probe_vec, 1);
@@ -86,16 +66,22 @@ for iterations = 1:number_of_iterations
   ratings = probe_vec(:, 3);
   
   ratings = mapRatings(ratings, K);
-  [U, ~] = calculateUserCoefficientMatrix(d, n, Y, W, user_indices, movie_indices);
-  ratings_predicted = calculatePredictedRatings(U, V(:, movie_indices));
+  ratings_predicted = calculatePredictedRatings(U(:,user_indices), V(:, movie_indices));
     
   ratings = unmapRatings(ratings, K);
   ratings_predicted = unmapRatings(ratings_predicted, K);
-  test_RMSE = calculateRMSE(ratings, ratings_predicted);
+  test_RMSE(iterations) = calculateRMSE(ratings, ratings_predicted);
   
-  fprintf('Training RMSE: %2.3f\n', training_RMSE);
-  fprintf('Test RMSE: %2.3f\n', test_RMSE);
+  fprintf('Training RMSE: %2.3f\n', training_RMSE(iterations));
+  fprintf('Test RMSE: %2.3f\n', test_RMSE(iterations));
+  save logistic_s1_30 training_RMSE test_RMSE
 end
+
+figure(1);
+plot (1:number_of_iterations, training_RMSE);
+figure(2);
+plot (1:number_of_iterations, test_RMSE);
+
 end
 
 function result = mapRatings(ratings, K)

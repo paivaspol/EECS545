@@ -1,6 +1,6 @@
 % movieIDs, userIDs, rating_matrix are what you need
 fprintf('loading data...\n');
-load moviedata_s1.mat
+load moviedata_s3.mat
 movieIDs = sort(unique(train_vec(:, 1)));
 userIDs = sort(unique(train_vec(:, 2)));
 m = size(movieIDs, 1);
@@ -18,6 +18,9 @@ p = size(probe_vec, 1);
 for i = 1 : p
     probe_vec(i, 3) = rating_matrix(find(movieIDs == probe_vec(i, 1)), find(userIDs == probe_vec(i, 2)));
 end
+
+isInProbe = ismember(train_vec, probe_vec, 'rows');
+train_vec = train_vec(~isInProbe, :);
 
 st = size(train_vec, 1);
 st = st - mod(st, 100000);
@@ -38,6 +41,10 @@ train_vec = train_vec(1:st, :);
   end
   fprintf('Done.\n');
 
-save moviedata_s1_new.mat train_vec probe_vec
+  movie_count = j;
+  user_count = i;
+  batches = numel(train_vec) / 100000;
+
+save moviedata_s3_new.mat train_vec probe_vec movie_count user_count batches
 
 fprintf('done loading data...\n');

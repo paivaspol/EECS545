@@ -2,31 +2,10 @@ function pmf(dataFileName, mapSparseData)
 
 load moviedata_s1_new
 
-training_size = size(train_vec, 1);
+n = user_count;
+m = movie_count;
+batch_count = batches;
 batch_size = 100000;
-batch_count = floor(training_size / batch_size);
-
-n = max([train_vec(:,1); probe_vec(:,1)]);
-m = max([train_vec(:,1); probe_vec(:,1)]);
-
-if mapSparseData
-  map_to_user_ids = unique([train_vec(:,1); probe_vec(:,1)]);
-  map_to_movie_ids = unique([train_vec(:,2); probe_vec(:,2)]);
-  fprintf('Mapping user data to have smaller dimensions...');
-  for i=1:numel(map_to_user_ids)
-    train_vec(train_vec(:, 1) == map_to_user_ids(i), 1) = i;
-    probe_vec(probe_vec(:, 1) == map_to_user_ids(i), 1) = i;
-  end
-  fprintf('Done.\n');
-  fprintf('Mapping movie data to have smaller dimensions...\n');
-  for j=1:numel(map_to_movie_ids)
-    train_vec(train_vec(:, 2) == map_to_movie_ids(j), 2) = j;
-    probe_vec(probe_vec(:, 2) == map_to_movie_ids(j), 2) = j;
-  end
-  n = numel(map_to_user_ids);   % user count
-  m = numel(map_to_movie_ids);  % movie count
-  fprintf('Done.\n');
-end
 
 d = 30;                       % number of features
 K = 5;                        % max rating value
@@ -35,18 +14,18 @@ K = 5;                        % max rating value
 % TUNE-ABLE PARAMETERS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-alpha = 0.5;                % gradient descent step size
+alpha = 0.02;                % gradient descent step size
 lambda = 0.002;             % regularization parameter
 number_of_iterations = 15;  % maximum number of iterations
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-U = zeros(d, n);    % user factor matrix
-V = zeros(d, m);    % movie factor matrix
+U = zeros(d,n);
+V = zeros(d, m);
+mean_rating = mean(train_vec(:,3));
 
 for iterations = 1:number_of_iterations
   for batch=1:batch_count
-    disp(U(1,1))
     fprintf('Iteration %d, Batch %d\n', iterations, batch);
     start_index = ((batch - 1) * batch_size) + 1;
     end_index = batch * batch_size;
@@ -55,7 +34,6 @@ for iterations = 1:number_of_iterations
     ratings = train_vec(start_index:end_index, 3);
     
     ratings_predicted = calculatePredictedRatings(U(:,user_indices), V(:,movie_indices));
-    disp(ratings_predicted)
     
     % Calculate gradients
     shared_coefficient = -(ratings - ratings_predicted);
